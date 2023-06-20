@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import ImageGalleryItem from 'components/ImageGalleryItem';
 import { GalleryList, Li } from './ImageGallery.styled';
 
-const ImageGallery = ({ hits }) => {
+export default function ImageGallery ({ hits }) {
   return (
     <>
       <GalleryList>
@@ -34,4 +34,4 @@ ImageGallery.propTypes = {
   ),
 };
 
-export default ImageGallery;
+

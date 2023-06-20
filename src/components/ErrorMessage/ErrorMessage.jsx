@@ -1,5 +1,5 @@
+import PropTypes from 'prop-types';
 import { Message } from "./ErrorMessage.styled";
-
 
 export default function ErrorMessage({ children }) {
   return (
@@ -8,4 +8,8 @@ export default function ErrorMessage({ children }) {
       <p>{children}</p>
     </Message>
   );
+}
+
+ErrorMessage.propTypes = {
+  children: PropTypes.node,
 }

@@ -1,6 +1,5 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import 'react-toastify/dist/ReactToastify.css';
-import PropTypes from 'prop-types';
 import { ToastContainer } from 'react-toastify';
 import debounce from 'lodash.debounce';
 import { getHits } from 'api';
@@ -18,96 +17,66 @@ const STATUS = {
   REJECTED: 'rejected',
 };
 
-export default class App extends Component {
-  state = {
-    searchQuery: '',
-    hits: [],
-    loading: false,
-    status: STATUS.IDLE,
-    page: 1,
-    perPage: 12,
-    totalHits: 0,
-    totalPages: 0,
-    error: '',
-  };
+export default function App() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [hits, setHits] = useState([]);
+  const [status, setStatus] = useState(STATUS.IDLE);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [error, setError] = useState('');
+  const perPage = 12;
 
-  async componentDidUpdate(prevProps, prevState) {
-    const { searchQuery, page } = this.state;
-
-    if (prevState.searchQuery !== searchQuery || prevState.page !== page) {
-      this.fetchHits();
+  useEffect(() => {
+    if (!searchQuery) {
+      return;
     }
-  }
+    setStatus(STATUS.PENDING);
+    const fetchHits = async () => {
+      try {
+        const data = await getHits({ searchQuery, perPage, page });
 
-  fetchHits = async () => {
-    const { searchQuery, perPage, page } = this.state;
-
-    await this.setState({ status: STATUS.PENDING });
-
-    try {
-      const data = await getHits({ searchQuery, perPage, page });
-
-      if (data.hits.length === 0) {
-        throw Error(`No matches found with "${searchQuery}"`);
+        if (data.hits.length === 0) {
+          throw Error(`No matches found with "${searchQuery}"`);
+        }
+        setHits(prevHits => [...prevHits, ...data.hits]);
+        setTotalPages(Math.ceil(data.totalHits / perPage));
+        setStatus(STATUS.RESOLVED);
+      } catch (error) {
+        setError(error.message);
+        setStatus(STATUS.REJECTED);
       }
+    };
 
-      this.setState(prevState => ({
-        hits: [...prevState.hits, ...data.hits],
-        status: STATUS.RESOLVED,
-        totalHits: data.totalHits,
-        totalPages: Math.ceil(data.totalHits / perPage),
-      }));
-    } catch (error) {
-      this.setState({ error: error.message, status: STATUS.REJECTED });
-    }
-  };
+    fetchHits();
+  }, [searchQuery, page]);
 
-  handleChangeSearchQuery = debounce(searchQuery => {
-    this.setState({
-      searchQuery,
-      page: 1,
-      hits: [],
-    });
+  const handleChangeSearchQuery = debounce(searchQuery => {
+    setSearchQuery(searchQuery);
+    setPage(1);
+    setHits([]);
   }, 1000);
 
-  handleLoardMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const handleLoardMore = () => {
+    setPage(prevPage => prevPage + 1);
   };
 
-  render() {
-    const { status, error, hits, page, totalPages } = this.state;
-    const showLoadMoreButton = hits.length !== 0 && page < totalPages;
+  const showLoadMoreButton = hits.length !== 0 && page < totalPages;
 
-    return (
-      <Container>
-        <ToastContainer autoClose={3000} theme={'colored'} />
-        <Searchbar onSubmit={this.handleChangeSearchQuery} />
-        {status === STATUS.PENDING && <Skeleton />}
-        {hits.length > 0 && <ImageGallery hits={hits} />}
-        {showLoadMoreButton && (
-          <Button
-            onClick={this.handleLoardMore}
-            disabled={status === STATUS.PENDING ? true : false}
-          >
-            {status === STATUS.PENDING ? 'Loading...' : 'Loard more'}
-          </Button>
-        )}
-        {status === STATUS.REJECTED && <ErrorMessage>{error}</ErrorMessage>}
-      </Container>
-    );
-  }
+  return (
+    <Container>
+      <ToastContainer autoClose={3000} theme={'colored'} />
+      <Searchbar onSubmit={handleChangeSearchQuery} />
+      {status === STATUS.PENDING && <Skeleton />}
+      {hits.length > 0 && <ImageGallery hits={hits} />}
+      {showLoadMoreButton && (
+        <Button
+          onClick={handleLoardMore}
+          disabled={status === STATUS.PENDING ? true : false}
+        >
+          {status === STATUS.PENDING ? 'Loading...' : 'Loard more'}
+        </Button>
+      )}
+      {status === STATUS.REJECTED && <ErrorMessage>{error}</ErrorMessage>}
+    </Container>
+  );
 }
-
-App.propTypes = {
-  searchQuery: PropTypes.string,
-  hits: PropTypes.array.isRequired,
-  loading: PropTypes.bool.isRequired,
-  status: PropTypes.string.isRequired,
-  page: PropTypes.number.isRequired,
-  perPage: PropTypes.number.isRequired,
-  totalHits: PropTypes.number.isRequired,
-  totalPages: PropTypes.number.isRequired,
-  error: PropTypes.string.isRequired,
-};
