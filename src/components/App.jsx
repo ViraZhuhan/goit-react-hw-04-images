@@ -38,7 +38,17 @@ export default function App() {
         if (data.hits.length === 0) {
           throw Error(`No matches found with "${searchQuery}"`);
         }
-        setHits(prevHits => [...prevHits, ...data.hits]);
+
+        const hits = data.hits.map(
+          ({ id, tags, webformatURL, largeImageURL }) => ({
+            id,
+            tags,
+            webformatURL,
+            largeImageURL,
+          })
+        );
+
+        setHits(prevHits => [...prevHits, ...hits]);
         setTotalPages(Math.ceil(data.totalHits / perPage));
         setStatus(STATUS.RESOLVED);
       } catch (error) {

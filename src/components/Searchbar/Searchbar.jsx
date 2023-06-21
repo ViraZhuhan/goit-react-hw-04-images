@@ -39,6 +39,7 @@ export default function Searchbar({ onSubmit }) {
           autoComplete="off"
           placeholder="Search images and photos"
           name="searchQuery"
+          value={searchQuery}
           onChange={handleChange}
         />
       </SearchForm>
